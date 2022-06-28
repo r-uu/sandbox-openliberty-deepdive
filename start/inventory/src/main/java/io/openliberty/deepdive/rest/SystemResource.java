@@ -14,42 +14,61 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
 
 @ApplicationScoped @Path("/systems") public class SystemResource
 {
 	@Inject Inventory inventory;
 
-	@GET @Path("/") @Produces(MediaType.APPLICATION_JSON) public List<SystemData> listContents()
+	@GET
+	@Path("/")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<SystemData> listContents()
 	{
 		return inventory.getSystems();
 	}
 
-	@GET @Path("/{hostname}")
+	@GET
+	@Path("/{hostname}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public SystemData getSystem(@PathParam("hostname") String hostname)
 	{
 		return inventory.getSystem(hostname);
 	}
 
-	@POST @Consumes(MediaType.APPLICATION_FORM_URLENCODED) @Produces(MediaType.APPLICATION_JSON) public Response addSystem(
-			@QueryParam("hostname") String hostname, @QueryParam("osName") String osName,
-			@QueryParam("javaVersion") String javaVersion, @QueryParam("heapSize") Long heapSize)
+	@POST
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response addSystem(
+			@QueryParam("hostname") String hostname,
+			@QueryParam("osName") String osName,
+			@QueryParam("javaVersion") String javaVersion,
+			@QueryParam("heapSize") Long heapSize,
+			@Context UriInfo uriInfo)
 	{
-
 		SystemData s = inventory.getSystem(hostname);
 		if (s != null)
 		{
 			return fail(hostname + " already exists.");
 		}
 		inventory.add(hostname, osName, javaVersion, heapSize);
-		return success(hostname + " was added.");
+		// return "created" response together with uriInfo
+//		return success(hostname + " was added.");
+		return created(hostname, uriInfo);
 	}
 
-	@PUT @Path("/{hostname}") @Consumes(MediaType.APPLICATION_FORM_URLENCODED) @Produces(MediaType.APPLICATION_JSON) public Response updateSystem(
-			@PathParam("hostname") String hostname, @QueryParam("osName") String osName,
-			@QueryParam("javaVersion") String javaVersion, @QueryParam("heapSize") Long heapSize)
+	@PUT @Path("/{hostname}")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_JSON)
+	public Response updateSystem(
+			@PathParam("hostname") String hostname,
+			@QueryParam("osName") String osName,
+			@QueryParam("javaVersion") String javaVersion,
+			@QueryParam("heapSize") Long heapSize)
 	{
 
 		SystemData s = inventory.getSystem(hostname);
@@ -88,6 +107,14 @@ import jakarta.ws.rs.core.Response;
 	private Response success(String message)
 	{
 		return Response.ok("{ \"ok\" : \"" + message + "\" }").build();
+	}
+
+	private Response created(String hostname, UriInfo uriInfo)
+	{
+    UriBuilder uriBuilder = uriInfo.getAbsolutePathBuilder();
+    uriBuilder.path(hostname);
+    return Response.created(uriBuilder.build()).build();
+//		return Response.ok("{ \"ok\" : \"" + message + "\" }").build();
 	}
 
 	private Response fail(String message)
