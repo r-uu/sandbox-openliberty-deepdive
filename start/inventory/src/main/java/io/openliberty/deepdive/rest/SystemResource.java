@@ -2,6 +2,9 @@ package io.openliberty.deepdive.rest;
 
 import java.util.List;
 
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
+
 import io.openliberty.deepdive.rest.model.SystemData;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -20,20 +23,29 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.core.UriInfo;
 
-@ApplicationScoped @Path("/systems") public class SystemResource
+@ApplicationScoped
+@Path("/systems")
+public class SystemResource
 {
-	@Inject Inventory inventory;
+	@Inject
+	private Inventory inventory;
 
 	@GET
-	@Path("/")
-	@Produces(MediaType.APPLICATION_JSON)
+	@Path             ("/")
+	@Produces         (MediaType.APPLICATION_JSON)
+	@APIResponseSchema(value               = SystemData.class,
+	                   responseDescription = "list of system data stored within the inventory",
+	                   responseCode        = "200")
+	@Operation        (summary             = "list contents",
+	                   description         = "returns the currently stored system data in the inventory",
+	                   operationId         = "listContents")
 	public List<SystemData> listContents()
 	{
 		return inventory.getSystems();
 	}
 
 	@GET
-	@Path("/{hostname}")
+	@Path    ("/{hostname}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public SystemData getSystem(@PathParam("hostname") String hostname)
 	{
@@ -43,12 +55,11 @@ import jakarta.ws.rs.core.UriInfo;
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response addSystem(
-			@QueryParam("hostname") String hostname,
-			@QueryParam("osName") String osName,
-			@QueryParam("javaVersion") String javaVersion,
-			@QueryParam("heapSize") Long heapSize,
-			@Context UriInfo uriInfo)
+	public Response addSystem(@QueryParam("hostname")    String  hostname,
+	                          @QueryParam("osName")      String  osName,
+	                          @QueryParam("javaVersion") String  javaVersion,
+	                          @QueryParam("heapSize")    Long    heapSize,
+	                          @Context                   UriInfo uriInfo)
 	{
 		SystemData s = inventory.getSystem(hostname);
 		if (s != null)
