@@ -3,7 +3,14 @@ package io.openliberty.deepdive.rest;
 import java.util.List;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn;
+import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameters;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponseSchema;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 
 import io.openliberty.deepdive.rest.model.SystemData;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,20 +41,35 @@ public class SystemResource
 	@Path             ("/")
 	@Produces         (MediaType.APPLICATION_JSON)
 	@APIResponseSchema(value               = SystemData.class,
-	                   responseDescription = "list of system data stored within the inventory",
-	                   responseCode        = "200")
+	                   responseDescription = "list of system data items stored within the inventory",
+	                   responseCode        = HttpResponseConstants._OK_)
 	@Operation        (summary             = "list contents",
-	                   description         = "returns the currently stored system data in the inventory",
-	                   operationId         = "listContents")
-	public List<SystemData> listContents()
+	                   description         = "returns the system data currently stored within the inventory",
+	                   operationId         = "listSystems")
+	public List<SystemData> listSystems()
 	{
 		return inventory.getSystems();
 	}
 
 	@GET
-	@Path    ("/{hostname}")
-	@Produces(MediaType.APPLICATION_JSON)
-	public SystemData getSystem(@PathParam("hostname") String hostname)
+	@Path             ("/{hostname}")
+	@Produces         (MediaType.APPLICATION_JSON)
+	@APIResponseSchema(value               = SystemData.class,
+	                   responseDescription = "system data of a particular host.",
+	                   responseCode        = HttpResponseConstants._OK_)
+	@Operation        (summary             = "get system data",
+	                   description         =   "retrieves and returns the system data for the system "
+	                                         + "service running on the particular host.",
+	                   operationId         = "getSystem")
+	public SystemData getSystem(
+			@Parameter(name        = "hostname",
+			           in          = ParameterIn.PATH,
+			           description = "The hostname of the system",
+			           required    = true,
+			           example     = "localhost",
+			           schema      = @Schema(type = SchemaType.STRING))
+			@PathParam("hostname")
+			String hostname)
 	{
 		return inventory.getSystem(hostname);
 	}
@@ -55,10 +77,41 @@ public class SystemResource
 	@POST
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response addSystem(@QueryParam("hostname")    String  hostname,
-	                          @QueryParam("osName")      String  osName,
+	@APIResponses(value = { @APIResponse(responseCode = HttpResponseConstants._OK_,
+	                                     description  = "successfully added system to inventory"),
+	                        @APIResponse(responseCode = HttpResponseConstants._BAD_REQUEST_,
+	                                     description  = "unable to add system to inventory")})
+	@Parameters  (value = { @Parameter(name        = "hostname",
+	                                   in          = ParameterIn.QUERY,
+	                                   description = "hostname of the system",
+	                                   required    = true,
+	                                   example     = "localhost",
+	                                   schema      = @Schema(type = SchemaType.STRING)),
+	                        @Parameter(name        = "osName",
+	                                   in          = ParameterIn.QUERY,
+	                                   description = "operating system of the system",
+	                                   required    = true,
+	                                   example     = "linux",
+	                                   schema      = @Schema(type = SchemaType.STRING)),
+	                        @Parameter(name        = "javaVersion",
+	                                   in          = ParameterIn.QUERY,
+	                                   description = "java version of the system",
+	                                   required    = true,
+	                                   example     = "11",
+	                                   schema      = @Schema(type = SchemaType.STRING)),
+	                        @Parameter(name        = "heapSize",
+	                                   in          = ParameterIn.QUERY,
+	                                   description = "heap size of the system",
+	                                   required    = true,
+	                                   example     = "1048576",
+	                                   schema      = @Schema(type = SchemaType.NUMBER))})
+	@Operation   (summary     = "add system",
+	              description = "add a system and its data to the inventory",
+	              operationId = "addSystem")
+	public Response addSystem(@QueryParam("hostname"   ) String  hostname,
+	                          @QueryParam("osName"     ) String  osName,
 	                          @QueryParam("javaVersion") String  javaVersion,
-	                          @QueryParam("heapSize")    Long    heapSize,
+	                          @QueryParam("heapSize"   ) Long    heapSize,
 	                          @Context                   UriInfo uriInfo)
 	{
 		SystemData s = inventory.getSystem(hostname);
@@ -75,13 +128,43 @@ public class SystemResource
 	@PUT @Path("/{hostname}")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response updateSystem(
-			@PathParam("hostname") String hostname,
-			@QueryParam("osName") String osName,
-			@QueryParam("javaVersion") String javaVersion,
-			@QueryParam("heapSize") Long heapSize)
+	@APIResponses(value = { @APIResponse(responseCode = HttpResponseConstants._OK_,
+	                                     description  = "successfully updated system"),
+	                        @APIResponse(responseCode = HttpResponseConstants._BAD_REQUEST_,
+	                                     description  =   "unable to update "
+	                                                    + "because the system does not exist in the inventory.")})
+	@Parameters  (value = { @Parameter(name        = "hostname",
+	                                   in          = ParameterIn.PATH, // really Path, not Query?
+	                                   description = "hostname of the system",
+	                                   required    = true,
+	                                   example     = "localhost",
+	                                   schema      = @Schema(type = SchemaType.STRING)),
+	                        @Parameter(name = "osName",
+	                                   in          = ParameterIn.QUERY,
+	                                   description = "operating system of the system",
+	                                   required    = true,
+	                                   example     = "linux",
+	                                   schema      = @Schema(type = SchemaType.STRING)),
+	                        @Parameter(name        = "javaVersion",
+	                                   in          = ParameterIn.QUERY,
+	                                   description = "java version of the system",
+	                                   required    = true,
+	                                   example     = "11",
+	                                   schema      = @Schema(type = SchemaType.STRING)),
+	                        @Parameter(name        = "heapSize",
+	                                   in          = ParameterIn.QUERY,
+	                                   description = "heap size of the system",
+	                                   required    = true,
+	                                   example     = "1048576",
+	                                   schema      = @Schema(type = SchemaType.NUMBER))})
+	@Operation    (summary     = "update system",
+	               description = "update a system and its data on the inventory",
+	               operationId = "updateSystem")
+	public Response updateSystem(@PathParam ("hostname"   ) String hostname, // really PathParam, not QueryParam?
+	                             @QueryParam("osName"     ) String osName,
+	                             @QueryParam("javaVersion") String javaVersion,
+	                             @QueryParam("heapSize"   ) Long heapSize)
 	{
-
 		SystemData s = inventory.getSystem(hostname);
 		if (s == null)
 		{
@@ -94,8 +177,24 @@ public class SystemResource
 		return success(hostname + " was updated.");
 	}
 
-	@DELETE @Path("/{hostname}") @Produces(MediaType.APPLICATION_JSON) public Response removeSystem(
-			@PathParam("hostname") String hostname)
+	@DELETE
+	@Path("/{hostname}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@APIResponses(value = { @APIResponse(responseCode = HttpResponseConstants._OK_,
+	                                     description  = "successfully deleted the system from inventory"),
+	                        @APIResponse(responseCode = HttpResponseConstants._BAD_REQUEST_,
+	                                     description  =   "unable to delete "
+	                                                    + "because the system does not exist in the inventory")})
+	@Parameter   (name        = "hostname",
+	              in          = ParameterIn.PATH,
+	              description = "hostname of the system",
+	              required    = true,
+	              example     = "localhost",
+	              schema      = @Schema(type = SchemaType.STRING))
+	@Operation   (summary     = "remove system",
+	              description = "removes a system from the inventory.",
+	              operationId = "removeSystem")
+	public Response removeSystem(@PathParam("hostname") String hostname)
 	{
 		SystemData s = inventory.getSystem(hostname);
 		if (s != null)
@@ -109,8 +208,24 @@ public class SystemResource
 		}
 	}
 
-	@POST @Path("/client/{hostname}") @Consumes(MediaType.APPLICATION_FORM_URLENCODED) @Produces(MediaType.APPLICATION_JSON) public Response addSystemClient(
-			@PathParam("hostname") String hostname)
+	@POST
+	@Path("/client/{hostname}")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_JSON)
+	@APIResponses(value = { @APIResponse(responseCode = HttpResponseConstants._OK_,
+	                                     description  = "successfully added system client"),
+	                        @APIResponse(responseCode = HttpResponseConstants._BAD_REQUEST_,
+	                                     description = "unable to add system client") })
+	@Parameter   (name        = "hostname",
+	              in          = ParameterIn.PATH,
+	              description = "hostname of the system",
+	              required    = true,
+	              example     = "localhost",
+	              schema      = @Schema(type = SchemaType.STRING))
+	@Operation(summary     = "add system client",
+	           description = "add a system client",
+	           operationId = "addSystemClient")
+	public Response addSystemClient(@PathParam("hostname") String hostname)
 	{
 		return fail("This api is not implemented yet.");
 	}
