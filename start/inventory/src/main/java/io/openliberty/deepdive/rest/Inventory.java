@@ -1,52 +1,44 @@
 package io.openliberty.deepdive.rest;
 
-import io.openliberty.deepdive.rest.model.SystemData;
-
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
+import io.openliberty.deepdive.rest.model.SystemData;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+@ApplicationScoped
 public class Inventory
 {
-	private List<SystemData> systems = Collections.synchronizedList(new ArrayList<>());
+	@PersistenceContext(name = "jpa-unit")
+	private EntityManager em;
 
 	public List<SystemData> getSystems()
 	{
-		return systems;
+		return em.createNamedQuery("SystemData.findAll", SystemData.class).getResultList();
 	}
 
 	public SystemData getSystem(String hostname)
 	{
-		for (SystemData s : systems)
-		{
-			if (s.getHostname().equalsIgnoreCase(hostname))
-			{
-				return s;
-			}
-		}
-		return null;
+		List<SystemData> result =
+				em.createNamedQuery("SystemData.findSystem", SystemData.class)
+				  .setParameter("hostname", hostname)
+				  .getResultList();
+		return result == null || result.isEmpty() ? null : result.get(0);
 	}
 
 	public void add(String hostname, String osName, String javaVersion, Long heapSize)
 	{
-		systems.add(new SystemData(hostname, osName, javaVersion, heapSize));
+		em.persist(new SystemData(hostname, osName, javaVersion, heapSize));
 	}
 
 	public void update(SystemData s)
 	{
-		for (SystemData systemData : systems)
-		{
-			if (systemData.getHostname().equalsIgnoreCase(s.getHostname()))
-			{
-				systemData.setOsName(s.getOsName());
-				systemData.setJavaVersion(s.getJavaVersion());
-				systemData.setHeapSize(s.getHeapSize());
-			}
-		}
+		em.merge(s);
 	}
 
-	public boolean removeSystem(SystemData s)
+	public void removeSystem(SystemData s)
 	{
-		return systems.remove(s);
+		em.remove(s);
 	}
 }
