@@ -137,8 +137,6 @@ public class SystemResource
 			return fail(hostname + " already exists.");
 		}
 		inventory.add(hostname, osName, javaVersion, heapSize);
-//	return success(hostname + " was added");
-		// return "created" response together with uriInfo
 		return created(hostname, uriInfo);
 	}
 
