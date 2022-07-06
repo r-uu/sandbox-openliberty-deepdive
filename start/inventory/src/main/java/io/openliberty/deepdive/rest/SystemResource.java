@@ -267,19 +267,21 @@ public class SystemResource
 		}
 
 		String authHeader = "Bearer " + jwt.getRawToken();
+
 		try
 		{
-			String osName = customRestClient.getProperty(authHeader, "os.name");
-			String javaVer = customRestClient.getProperty(authHeader, "java.version");
-			Long heapSize = customRestClient.getHeapSize(authHeader);
+			String osName    = customRestClient.getProperty(authHeader, "os.name");
+			String javaVer   = customRestClient.getProperty(authHeader, "java.version");
+			Long   heapSize  = customRestClient.getHeapSize(authHeader);
+
 			inventory.add(hostname, osName, javaVer, heapSize);
 		}
 		catch (Exception e)
 		{
-			return fail("Failed to reach the client " + hostname + ".");
+			return fail("failed to reach the client " + hostname + ".");
 		}
 
-		return success(hostname + " was added.");
+		return success(hostname + " was added");
 	}
 
 	private SystemClient getSystemClient(String hostname) throws Exception
