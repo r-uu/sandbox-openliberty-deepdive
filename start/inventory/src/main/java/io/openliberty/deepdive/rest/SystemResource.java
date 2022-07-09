@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.enums.ParameterIn;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -94,6 +95,9 @@ public class SystemResource
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
 	@Transactional
+	@Counted(name        = "addSystem",
+	         absolute    = true,
+	         description = "number of times addSystem endpoint is called")
 	@APIResponses(value = { @APIResponse(responseCode = HttpResponseConstants._CREATED_,
 	                                     description  = "successfully added system to inventory"),
 	                        @APIResponse(responseCode = HttpResponseConstants._BAD_REQUEST_,
@@ -145,6 +149,9 @@ public class SystemResource
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
 	@Transactional
+	@Counted(name        = "updateSystem",
+	         absolute    = true,
+           description = "number of times updateSystem endpoint is called")
 	@RolesAllowed({ "admin", "user" })
 	@APIResponses(value = { @APIResponse(responseCode = HttpResponseConstants._OK_,
 	                                     description  = "successfully updated system"),
@@ -199,6 +206,9 @@ public class SystemResource
 	@Path("/{hostname}")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Transactional
+	@Counted(name        = "removeSystem",
+	         absolute    = true,
+	         description = "number of times removeSystem endpoint is called")
 	@RolesAllowed({ "admin" })
 	@APIResponses(value = { @APIResponse(responseCode = HttpResponseConstants._OK_,
 	                                     description  = "successfully deleted the system from inventory"),

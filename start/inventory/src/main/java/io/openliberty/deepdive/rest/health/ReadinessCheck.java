@@ -16,11 +16,11 @@ import jakarta.inject.Inject;
 public class ReadinessCheck implements HealthCheck
 {
 	@Inject
-	@ConfigProperty(name = "postgres/hostname")
+	@ConfigProperty(name = "postgres.host")
 	private String host;
 
 	@Inject
-	@ConfigProperty(name = "postgres/portnum")
+	@ConfigProperty(name = "postgres.port")
 	private int port;
 
 	@Override
